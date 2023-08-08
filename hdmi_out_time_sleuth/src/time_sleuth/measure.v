@@ -31,6 +31,7 @@ module measure(
     reg [`AVERAGE_BITS-1:0] avg_loop;
 
     bcdcounter bcdcounter(
+        .clock(clock),
         .trigger(counter_trigger),
         .reset(reset_bcdcounter),
         .bcdcount(bcdcount)
@@ -72,10 +73,10 @@ module measure(
 
     ///////////////////////////////////////////////////////
 
-    always @(posedge counter_trigger or posedge reset_bcdcounter) begin
+    always @(posedge clock) begin
         if (reset_bcdcounter) begin
             avg_counter <= 0;
-        end else begin
+        end else if (counter_trigger) begin
             avg_counter <= avg_counter + 1'b1;
         end
     end

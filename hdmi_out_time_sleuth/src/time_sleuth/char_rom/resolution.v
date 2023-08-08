@@ -1,5 +1,5 @@
 
-`include "time_sleuth/defines.v"
+`include "./defines.v"
 
 import my_types::*;
 

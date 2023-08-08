@@ -1,5 +1,5 @@
 `include "defines.v"
-`include "video_modes.v"
+`include "config/video_modes.v"
 import my_types::*;
 
 module video(
