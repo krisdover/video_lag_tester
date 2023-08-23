@@ -3,16 +3,14 @@ module timingsgen(
     input VideoMode videoMode,
     output reg [11:0] counterX,
     output reg [11:0] counterY,
-    output reg [11:0] visible_counterX,
-    output reg [11:0] visible_counterY,
     output reg hsync,
     output reg vsync,
-    output reg de,
     output reg state
 );
     /*
-        H_SYNC  H_BACK_PORCH  H_ACTIVE H_FRONT_PORCH
-        V_SYNC  V_BACK_PORCH  V_ACTIVE V_FRONT_PORCH
+        Timing layout:
+        H_BACK_PORCH H_SYNC H_FRONT_PORCH  H_ACTIVE
+        V_BACK_PORCH V_SYNC V_FRONT_PORCH  V_ACTIVE
     */
 
     /* generate counter */
@@ -28,49 +26,20 @@ module timingsgen(
                 state <= ~state;
             end
         end
-    end 
-
-    /* generate visible area timings */
-    always @(posedge clock) begin
-        visible_counterX <= counterX + 1'b1 /* add one  */ - (videoMode.h_sync + videoMode.h_back_porch);
-        visible_counterY <= counterY - (videoMode.v_sync + (state ? videoMode.v_back_porch_2 : videoMode.v_back_porch_1));
     end
 
-    /* generate hsync */
+    /* generate hsync & vsync control timings */
     always @(posedge clock) begin
-        if (counterX < videoMode.h_sync) begin
-            hsync <= videoMode.h_sync_pol;
+        hsync <= (~videoMode.h_sync_pol) ^ (counterX >= videoMode.h_active + videoMode.h_front_porch && counterX < videoMode.h_active + videoMode.h_front_porch + videoMode.h_sync);
+        // vsync pulses should begin and end at the start of hsync, so special
+        // handling is required for the lines on which vsync starts and ends
+        // See VESA-DMT Spec Section 3.5
+        if (counterY == (videoMode.v_active + videoMode.v_front_porch - 1)) begin
+            vsync <= (~videoMode.v_sync_pol) ^ (counterX >= videoMode.h_active + videoMode.h_front_porch);
+        end else if (counterY == (videoMode.v_active + videoMode.v_front_porch + videoMode.v_sync - 1)) begin
+            vsync <= (~videoMode.v_sync_pol) ^ (counterX < videoMode.h_active + videoMode.h_front_porch);
         end else begin
-            hsync <= ~videoMode.h_sync_pol;
-        end
-    end
-
-    `define VerticalSyncPixelOffset (state ? videoMode.v_pxl_offset_2 : videoMode.v_pxl_offset_1)
-
-    /* generate vsync */
-    always @(posedge clock) begin
-        if (counterY <= videoMode.v_sync) begin
-            if (counterY == 0 && counterX < `VerticalSyncPixelOffset
-             || counterY == videoMode.v_sync && counterX >= `VerticalSyncPixelOffset) begin
-                vsync <= ~videoMode.v_sync_pol;
-            end else begin
-                vsync <= videoMode.v_sync_pol;
-            end
-        end else begin
-            vsync <= ~videoMode.v_sync_pol;
-        end
-    end
-
-    /* generate DE */
-    always @(posedge clock) begin
-        if (counterX >= videoMode.h_sync + videoMode.h_back_porch
-         && counterY >= videoMode.v_sync + (state ? videoMode.v_back_porch_2 : videoMode.v_back_porch_1)
-         && counterX < videoMode.h_sync + videoMode.h_back_porch + videoMode.h_active
-         && counterY < videoMode.v_sync + (state ? videoMode.v_back_porch_2 : videoMode.v_back_porch_1) + videoMode.v_active)
-        begin
-            de <= 1'b1;
-        end else begin
-            de <= 0;
+            vsync <= (~videoMode.v_sync_pol) ^ (counterY >= videoMode.v_active + videoMode.v_front_porch && counterY < videoMode.v_active + videoMode.v_front_porch + videoMode.v_sync);
         end
     end
 endmodule

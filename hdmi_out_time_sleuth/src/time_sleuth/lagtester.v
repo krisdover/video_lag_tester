@@ -1,4 +1,5 @@
 `include "defines.v"
+`include "video_timing.vh"
 
 
 module lagtester(
@@ -7,17 +8,28 @@ module lagtester(
     
     input SENSOR,
 
+    input BUTTON,
+
     output wire        O_tmds_clk_p,
     output wire        O_tmds_clk_n,
     output wire [2:0]  O_tmds_data_p,
     output wire [2:0]  O_tmds_data_n,
 
-    output wire LED
+    output wire LED,
+    output wire VSYNC,
+    output wire HSYNC,
+    output wire VA,
+    output wire VG,
+    inout  wire CEC
 );
-    wire internal_clock;
+    wire pixel_clock;
     
     wire sensor_out;
     wire sensor_trigger;
+
+    wire button_out;
+    wire button_trigger;
+    wire button_trigger_crossed;
 
     wire config_changed;
     wire [7:0] config_data;
@@ -30,55 +42,71 @@ module lagtester(
     wire [19:0] bcd_minimum;
     wire [19:0] bcd_maximum;
     wire [19:0] bcd_average;
+    wire avg_ready_trigger;
+    wire avg_ready_trigger_crossed;
 
     wire tfp410_ready;
     wire hpd_detected;
 
-wire clk_serial;
-wire hdmi_rstn;
+    wire clk_serial;
+    wire hdmi_rstn;
 
     wire [4:0] RES_CONFIG = 5'b00001 ;
 
-    wire [7:0] DVI_RED;
-    wire [7:0] DVI_GREEN;
-    wire [7:0] DVI_BLUE;
-    wire DVI_DE;
-    wire DVI_HSYN;
-    wire DVI_VSYNC;
+    wire vsync;
+    wire hsync;
+
+    wire video_period;
+    wire video_guard;
+    wire video_preamble;
+    wire [23:0] video_data;
+    
+    wire data_period;
+    wire data_guard;
+    wire data_preamble;
+    wire [8:0] packet_data;
+    wire packet_start;
+    wire packet_state1;
+    wire packet_state2;
+
+    wire cec_send;
+    wire cec_in;
+    wire cec_out;
 
     ///////////////////////////////////////////
     // clocks
 
-`define PIXEL_CLOCK_135 4'd3
-`define PIXEL_CLOCK_371_25 4'd2
 video_clock video_clock_inst (
   .clk27       (clock), 
-  .clock_config(`PIXEL_CLOCK_371_25),
+  .clock_config(`PIXEL_CLOCK),
   .rstn        (1'b1),
   .hdmi_rstn_o (hdmi_rstn),
   .clk_serial  (clk_serial),
-  .clk_pixel   (internal_clock)
+  .clk_pixel   (pixel_clock)
 );
 
 hdmi_device hdmi_device (
-    .I_rst_n       (hdmi_rstn         ),
-    .I_serial_clk  (clk_serial        ),
-    .I_rgb_clk     (internal_clock    ),
-    .I_rgb_vs      (DVI_VSYNC ),
-    .I_rgb_hs      (DVI_HSYNC ),
-    .I_rgb_de      (DVI_DE    ),
+    .I_rst_n       (hdmi_rstn   ),
+    .I_serial_clk  (clk_serial  ),
+    .I_clk         (pixel_clock ),
+    .I_vsync       (vsync       ),
+    .I_hsync       (hsync       ),
 
-     //.I_rgb_r       ({DVI_RED[7] ? 8'hff : 8'h11}),
-     //.I_rgb_g       ({DVI_GREEN[7] ? 8'hff : 8'h11}),
-     //.I_rgb_b       ({DVI_BLUE[7] ? 8'hff : 8'h11}),
+    .I_video_preamble   (video_preamble ),
+    .I_video_guard      (video_guard    ),
+    .I_video_period     (video_period   ),
+    .I_video_data       (video_data     ),
 
-     .I_rgb_r       (DVI_RED),
-     .I_rgb_g       (DVI_GREEN),
-     .I_rgb_b       (DVI_BLUE),
-    .O_tmds_clk_p  (O_tmds_clk_p      ),
-    .O_tmds_clk_n  (O_tmds_clk_n      ),
-    .O_tmds_data_p (O_tmds_data_p     ),
-    .O_tmds_data_n (O_tmds_data_n     )
+    .I_data_preamble      (data_preamble ),
+    .I_data_guard         (data_guard    ),
+    .I_data_period        (data_period   ),
+    .I_packet_data        (packet_data   ),
+    .I_packet_start       (packet_start  ),
+
+    .O_tmds_clk_p  (O_tmds_clk_p  ),
+    .O_tmds_clk_n  (O_tmds_clk_n  ),
+    .O_tmds_data_p (O_tmds_data_p ),
+    .O_tmds_data_n (O_tmds_data_n )
 );
     ///////////////////////////////////////////
     // sensor
@@ -87,6 +115,15 @@ hdmi_device hdmi_device (
         .sensor(SENSOR),
         .sensor_out(sensor_out),
         .sensor_trigger(sensor_trigger)
+    );
+
+    ///////////////////////////////////////////
+    // button debouncer
+    debouncer button(
+        .i_clk(pixel_clock),
+        .i_switch(BUTTON),
+        .o_switch(button_out),
+        .o_switch_trigger(button_trigger)
     );
 
     ///////////////////////////////////////////
@@ -101,7 +138,7 @@ hdmi_device hdmi_device (
     ///////////////////////////////////////////
     // measurement
     Flag_CrossDomain reset_control(
-        .clkA(internal_clock),
+        .clkA(pixel_clock),
         .FlagIn_clkA(starttrigger),
         .clkB(clock),
         .FlagOut_clkB(reset_counter)
@@ -115,7 +152,17 @@ hdmi_device hdmi_device (
         .bcd_current(bcd_current),
         .bcd_minimum(bcd_minimum),
         .bcd_maximum(bcd_maximum),
-        .bcd_average(bcd_average)
+        .bcd_average(bcd_average),
+        .avg_ready(avg_ready_trigger)
+    );
+
+    sync_data_cross #(
+        .WIDTH(1)
+    ) textgen_control(
+        .clkIn(clock),
+        .dataIn(avg_ready_trigger),
+        .clkOut(pixel_clock),
+        .dataOut(avg_ready_trigger_crossed)
     );
 
     ///////////////////////////////////////////
@@ -124,7 +171,7 @@ hdmi_device hdmi_device (
         .WIDTH(8)
     ) video_data_cross (
         .clkIn(clock),
-        .clkOut(internal_clock),
+        .clkOut(pixel_clock),
         .dataIn(config_data),
         .dataOut(config_data_crossed)
     );
@@ -133,23 +180,31 @@ hdmi_device hdmi_device (
         .WIDTH(80)
     ) bcdcounter_cross (
         .clkIn(clock),
-        .clkOut(internal_clock),
+        .clkOut(pixel_clock),
         .dataIn({ bcd_average, bcd_maximum, bcd_minimum, bcd_current }),
         .dataOut(bcdcount_crossed)
     );
 
     video video(
-
-        .clock(internal_clock),
+        .clock(pixel_clock),
         .config_data(config_data_crossed),
         .bcdcount(bcdcount_crossed),
-        .red(DVI_RED),
-        .green(DVI_GREEN),
-        .blue(DVI_BLUE),
-        .de(DVI_DE),
-        .hsync(DVI_HSYNC),
-        .vsync(DVI_VSYNC),
-        .starttrigger(starttrigger)
+        .textgen_trigger(avg_ready_trigger_crossed),
+        .button_trigger(button_trigger),
+        .starttrigger(starttrigger),
+        .hsync(hsync),
+        .vsync(vsync),
+        .video_preamble(video_preamble),
+        .video_guard(video_guard),
+        .video_period(video_period),
+        .video_data(video_data),
+        .data_preamble(data_preamble),
+        .data_guard(data_guard),
+        .data_period(data_period),
+        .packet_data(packet_data),
+        .packet_start(packet_start),
+        .packet_state1(packet_state1),
+        .packet_state2(packet_state2)
     );
     ///////////////////////////////////////////
 
@@ -160,11 +215,11 @@ reg         vs_r;
 reg  [9:0]  cnt_vs;
 
 
-always@(posedge internal_clock) begin
-  vs_r <= DVI_VSYNC;
+always@(posedge pixel_clock) begin
+  vs_r <= vsync;
 end
-always@(posedge internal_clock) begin
-    if(vs_r && !DVI_VSYNC) //vs falling edge
+always@(posedge pixel_clock) begin
+    if(vs_r && !vsync) //vs falling edge
         cnt_vs <= cnt_vs + 10'd1;
 end
 
@@ -172,5 +227,20 @@ end
 
  assign LED = sensor_out;
  //   assign TFP410_reset = 1'b1;
+
+//  assign HSYNC = data_period;
+//  assign VSYNC = packet_state1;
+//  assign VA = packet_state2;
+//  assign VG = data_guard;
+//  assign VP = data_preamble;
+
+//  assign HSYNC = packet_data[5];
+//  assign VSYNC = packet_data[1];
+//  assign VA = pixel_clock;
+//  assign VG = packet_data[0];
+//  assign VP = packet_state2;
+
+assign CEC = cec_send ? 1'bZ : cec_out; // support tri-state inout
+assign cec_in = CEC;
 
 endmodule

@@ -43,7 +43,7 @@ PLLVR pllvr_inst (
     .VREN(gw_vcc)
 );
 
-defparam pllvr_inst.FCLKIN = "325";
+defparam pllvr_inst.FCLKIN = "27";
 defparam pllvr_inst.DYN_IDIV_SEL = "true";
 defparam pllvr_inst.IDIV_SEL = 1;
 defparam pllvr_inst.DYN_FBDIV_SEL = "true";

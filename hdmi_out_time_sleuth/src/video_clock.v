@@ -1,5 +1,6 @@
 `include "video_timing.vh"
 
+`define PLL1_371_25 2
 `define PLL1_540 1
 `define PLL1_351 0
 `define PLL1_DONT_CARE 0
@@ -68,6 +69,15 @@ always @ (*) begin
             odsel2 <= `ODIV2;
         end
 
+        //371.25 -> 742.5
+        `PIXEL_CLOCK_742_5: begin
+            pll1_config <= `PLL1_371_25;
+            clksel <= 4'b0010;
+            fbdsel2 <= 64-2;
+            idsel2 <= 64-1;
+            odsel2 <= `ODIV2;
+        end
+
         //27  -> 371.25
         `PIXEL_CLOCK_371_25: begin
             pll1_config <= `PLL1_DONT_CARE;
@@ -101,14 +111,20 @@ end
 always @ (*) begin
     ///** PLL1
     case (pll1_config) 
+        `PLL1_371_25: begin
+            //371.25 (clkoutd = 6.875)
+            fbdsel1 <= 64-55;
+            idsel1 <= 64-4;
+            odsel1 <= `ODIV2;
+        end
         `PLL1_351: begin
-            //351 (clkoutd 6.5)
+            //351 (clkoutd = 6.5)
             fbdsel1 <= 64-13;
             idsel1 <= 64-1;
             odsel1 <= `ODIV2;
         end
         default: begin //PLL1_540
-            //540 (clkoutd 10)
+            //540 (clkoutd = 10)
             fbdsel1 <= 64-20;
             idsel1  <= 64-1;
             odsel1 <= `ODIV2;

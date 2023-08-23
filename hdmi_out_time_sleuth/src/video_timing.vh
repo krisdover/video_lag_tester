@@ -1,10 +1,10 @@
-//`define HDMI_1920x1080 not working yet
+//`define HDMI_1920x1080 // not working yet?
 `define HDMI_1280x720
 //`define HDMI_1024x768
 //`define HDMI_800x600
 //`define HDMI_640x480
 //`define HDMI_720x576
-//`define HDMI_720x480
+// `define HDMI_720x480
 //`define HDMI_720p
 //`define HDMI_NTSC
 //`define HDMI_PAL
@@ -14,6 +14,7 @@
 `define PIXEL_CLOCK_371_25 2
 `define PIXEL_CLOCK_135 3
 `define PIXEL_CLOCK_126 4
+`define PIXEL_CLOCK_742_5 5
 
 
 //ref https://tomverbeure.github.io/video_timings_calculator
@@ -23,8 +24,9 @@
 `define H_SYNC_POLARITY 1'b1
 `define V_SYNC_POLARITY 1'b1
 
+
 `ifdef HDMI_1920x1080
-  `define PIXEL_CLOCK `PIXEL_CLOCK_371_25
+  `define PIXEL_CLOCK `PIXEL_CLOCK_742_5
   `define H_TOTAL     12'd2200
   `define H_SYNC      12'd44
   `define H_BPORCH    12'd148
