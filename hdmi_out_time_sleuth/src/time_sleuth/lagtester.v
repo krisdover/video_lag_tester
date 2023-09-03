@@ -4,11 +4,9 @@
 
 module lagtester(
     input clock,
-
-    
     input SENSOR,
-
-    input BUTTON,
+    input KEY1,
+    input KEY2,
 
     output wire        O_tmds_clk_p,
     output wire        O_tmds_clk_n,
@@ -16,10 +14,8 @@ module lagtester(
     output wire [2:0]  O_tmds_data_n,
 
     output wire LED,
-    output wire VSYNC,
-    output wire HSYNC,
-    output wire VA,
-    output wire VG,
+    output wire cec_btn_trigger,
+    output wire data_ready,
     inout  wire CEC
 );
     wire pixel_clock;
@@ -27,9 +23,8 @@ module lagtester(
     wire sensor_out;
     wire sensor_trigger;
 
-    wire button_out;
-    wire button_trigger;
-    wire button_trigger_crossed;
+    wire video_btn_out;
+    wire video_btn_trigger;
 
     wire config_changed;
     wire [7:0] config_data;
@@ -45,7 +40,6 @@ module lagtester(
     wire avg_ready_trigger;
     wire avg_ready_trigger_crossed;
 
-    wire tfp410_ready;
     wire hpd_detected;
 
     wire clk_serial;
@@ -66,11 +60,20 @@ module lagtester(
     wire data_preamble;
     wire [8:0] packet_data;
     wire packet_start;
-    wire packet_state1;
-    wire packet_state2;
 
-    wire cec_send;
+    wire cec_btn_out;
+    // wire cec_btn_trigger;
+
+    wire [7:0] data_out;
+    wire data_eom;
+    wire data_broadcast;
+    wire data_acknowledged;
+    wire data_rejected;
+    // wire data_ready;
+    
+
     wire cec_in;
+    wire cec_send;
     wire cec_out;
 
     ///////////////////////////////////////////
@@ -118,12 +121,48 @@ hdmi_device hdmi_device (
     );
 
     ///////////////////////////////////////////
-    // button debouncer
-    debouncer button(
+    // CEC
+    
+    CEC_Transmitter cec_tx(
+        .clk(clock),
+        .rst(1'b0),
+        .data_ready(data_ready),
+        .data_out(data_out),
+        .data_eom(data_eom),
+        .data_broadcast(data_broadcast),
+        .cec_in(cec_in),
+        .cec_send(cec_send),
+        .cec_out(cec_out),
+        .data_acknowledged(data_acknowledged),
+        .data_rejected(data_rejected)
+    );
+    
+    CEC_Message cec_msg(
+        .clk(clock),
+        .rst(1'b0),
+        .trigger(cec_btn_trigger),
+        .data_acknowledged(data_acknowledged),
+        .data_rejected(data_rejected),
+        .data_out(data_out),
+        .data_eom(data_eom),
+        .data_broadcast(data_broadcast),
+        .data_ready(data_ready)
+    );
+
+    debouncer cec_button(
+        .i_clk(clock),
+        .i_switch(KEY2),
+        .o_switch(cec_btn_out),
+        .o_switch_trigger(cec_btn_trigger)
+    );
+
+    ///////////////////////////////////////////
+    // videogen button debouncer
+    debouncer videogen_button(
         .i_clk(pixel_clock),
-        .i_switch(BUTTON),
-        .o_switch(button_out),
-        .o_switch_trigger(button_trigger)
+        .i_switch(KEY1),
+        .o_switch(video_btn_out),
+        .o_switch_trigger(video_btn_trigger)
     );
 
     ///////////////////////////////////////////
@@ -190,7 +229,7 @@ hdmi_device hdmi_device (
         .config_data(config_data_crossed),
         .bcdcount(bcdcount_crossed),
         .textgen_trigger(avg_ready_trigger_crossed),
-        .button_trigger(button_trigger),
+        .button_trigger(video_btn_trigger),
         .starttrigger(starttrigger),
         .hsync(hsync),
         .vsync(vsync),
@@ -202,9 +241,7 @@ hdmi_device hdmi_device (
         .data_guard(data_guard),
         .data_period(data_period),
         .packet_data(packet_data),
-        .packet_start(packet_start),
-        .packet_state1(packet_state1),
-        .packet_state2(packet_state2)
+        .packet_start(packet_start)
     );
     ///////////////////////////////////////////
 
@@ -228,19 +265,7 @@ end
  assign LED = sensor_out;
  //   assign TFP410_reset = 1'b1;
 
-//  assign HSYNC = data_period;
-//  assign VSYNC = packet_state1;
-//  assign VA = packet_state2;
-//  assign VG = data_guard;
-//  assign VP = data_preamble;
-
-//  assign HSYNC = packet_data[5];
-//  assign VSYNC = packet_data[1];
-//  assign VA = pixel_clock;
-//  assign VG = packet_data[0];
-//  assign VP = packet_state2;
-
-assign CEC = cec_send ? 1'bZ : cec_out; // support tri-state inout
+assign CEC = cec_send ? cec_out : 1'bZ; // support tri-state inout
 assign cec_in = CEC;
 
 endmodule

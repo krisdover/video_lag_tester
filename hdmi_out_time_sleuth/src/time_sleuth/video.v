@@ -19,8 +19,6 @@ module video(
     output data_period,
     output [8:0] packet_data,
     output packet_start,
-    output packet_state1,
-    output packet_state2,
     output starttrigger
 );
     wire [11:0] counterX;
@@ -101,8 +99,6 @@ module video(
         .data_guard(data_guard),
         .data_period(data_period),
         .packet_data(packet_data),
-        .packet_start(packet_start),
-        .packet_state1(packet_state1),
-        .packet_state2(packet_state2)
+        .packet_start(packet_start)
     );
 endmodule

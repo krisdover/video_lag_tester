@@ -9,9 +9,7 @@ module datagen(
     output reg data_guard,
     output reg data_period,
     output [8:0] packet_data,
-    output reg packet_start,
-    output packet_state1,
-    output packet_state2
+    output reg packet_start
 );
 
     /* data island calculations, as per HDMI-1.3 Spec Section 5.2.3.1 */
@@ -82,8 +80,6 @@ module datagen(
             end
         end
     end
-    assign packet_state1 = packet_data[0];
-    assign packet_state2 = packet_enable;
 
     /* data island period markers */
     always @(posedge clock) begin
