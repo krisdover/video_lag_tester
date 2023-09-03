@@ -1,29 +1,36 @@
 `include "defines.v"
-`include "video_modes.v"
+`include "config/video_modes.v"
 import my_types::*;
 
 module video(
     input clock,
     input [7:0] config_data,
     input [79:0] bcdcount,
-    output [7:0] red,
-    output [7:0] green,
-    output [7:0] blue,
-    output de,
+    input textgen_trigger,
+    input button_trigger,
     output hsync,
     output vsync,
+    output video_preamble,
+    output video_guard,
+    output video_period,
+    output [23:0] video_data,
+    output data_preamble,
+    output data_guard,
+    output data_period,
+    output [8:0] packet_data,
+    output packet_start,
     output starttrigger
 );
     wire [11:0] counterX;
     wire [11:0] counterY;
-    wire [11:0] visible_counterX;
-    wire [11:0] visible_counterY;
     wire [`RESLINE_SIZE-1:0] resolution_line;
     wire [`LAGLINE_SIZE-1:0] lagdisplay_line;
     wire state;
     VideoMode videoMode;
 
-    assign videoMode = VIDEO_MODE_720P;//VIDEO_MODE_480P; //VIDEO_MODE_720P;
+    // assign videoMode = VIDEO_MODE_1080P;
+    assign videoMode = VIDEO_MODE_720P;
+    // assign videoMode = VIDEO_MODE_480P;
 /*
   always @(posedge clock) begin
         if (config_data[0])
@@ -51,11 +58,8 @@ module video(
         .videoMode(videoMode),
         .counterX(counterX),
         .counterY(counterY),
-        .visible_counterX(visible_counterX),
-        .visible_counterY(visible_counterY),
         .hsync(hsync),
         .vsync(vsync),
-        .de(de),
         .state(state)
     );
 
@@ -63,8 +67,7 @@ module video(
         .clock(clock),
         .videoMode(videoMode),
         .counterX(counterX),
-        .visible_counterX(visible_counterX),
-        .visible_counterY(visible_counterY),
+        .counterY(counterY),
         .bcdcount(bcdcount),
         .resolution_line(resolution_line),
         .lagdisplay_line_out(lagdisplay_line)
@@ -75,14 +78,27 @@ module video(
         .videoMode(videoMode),
         .counterX(counterX),
         .counterY(counterY),
-        .visible_counterX(visible_counterX),
-        .visible_counterY(visible_counterY),
         .resolution_line(resolution_line),
         .lagdisplay_line(lagdisplay_line),
         .state(state),
+        .textgen_trigger(textgen_trigger),
+        .button_trigger(button_trigger),
         .starttrigger(starttrigger),
-        .data({ red, green, blue })
+        .video_preamble(video_preamble),
+        .video_guard(video_guard),
+        .video_period(video_period),
+        .video_data(video_data)
     );
 
-
+    datagen datagen(
+        .clock(clock),
+        .videoMode(videoMode),
+        .counterX(counterX),
+        .counterY(counterY),
+        .data_preamble(data_preamble),
+        .data_guard(data_guard),
+        .data_period(data_period),
+        .packet_data(packet_data),
+        .packet_start(packet_start)
+    );
 endmodule

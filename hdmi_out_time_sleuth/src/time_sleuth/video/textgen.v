@@ -6,8 +6,7 @@ module textgen(
     input clock,
     input VideoMode videoMode,
     input [11:0] counterX,
-    input [11:0] visible_counterX,
-    input [11:0] visible_counterY,
+    input [11:0] counterY,
     input [79:0] bcdcount,
     output [`RESLINE_SIZE-1:0] resolution_line,
     output reg [`LAGLINE_SIZE-1:0] lagdisplay_line_out 
@@ -47,8 +46,8 @@ module textgen(
         case (counterX)
             0: begin
                 // addr for resolution_line
-                resolution_addr <= (visible_counterY + 1'b1) >> videoMode.v_res_divider;
-                lagdisplay_addr <= (visible_counterY + 1'b1 - videoMode.v_lag_start) >> videoMode.v_lag_divider;
+                resolution_addr <= (counterY + 1'b1) >> videoMode.v_res_divider;
+                lagdisplay_addr <= (counterY + 1'b1 - videoMode.v_lag_start) >> videoMode.v_lag_divider;
             end
             2: begin
                 trigger_write_lag <= 1;

@@ -9,7 +9,8 @@ module measure(
     output [19:0] bcd_current,
     output [19:0] bcd_minimum,
     output [19:0] bcd_maximum,
-    output [19:0] bcd_average
+    output [19:0] bcd_average,
+    output avg_ready
 );
     wire [23:0] bcdcount;
     wire [23:0] avg_counter_bcd;
@@ -31,6 +32,7 @@ module measure(
     reg [`AVERAGE_BITS-1:0] avg_loop;
 
     bcdcounter bcdcounter(
+        .clock(clock),
         .trigger(counter_trigger),
         .reset(reset_bcdcounter),
         .bcdcount(bcdcount)
@@ -72,10 +74,10 @@ module measure(
 
     ///////////////////////////////////////////////////////
 
-    always @(posedge counter_trigger or posedge reset_bcdcounter) begin
+    always @(posedge clock) begin
         if (reset_bcdcounter) begin
             avg_counter <= 0;
-        end else begin
+        end else if (counter_trigger) begin
             avg_counter <= avg_counter + 1'b1;
         end
     end
@@ -120,6 +122,8 @@ module measure(
                 end
             end
             waiting <= 0;
+        end else begin
+            avg_counter_start <= 1'b0;
         end
         if (avg_counter_ready) begin
             avg_counter_bcd_reg <= avg_counter_bcd[23:4];
@@ -130,5 +134,6 @@ module measure(
     assign bcd_minimum = bcdcount_min;
     assign bcd_maximum = bcdcount_max;
     assign bcd_average = avg_counter_bcd_reg;
+    assign avg_ready = avg_counter_ready;
 
 endmodule

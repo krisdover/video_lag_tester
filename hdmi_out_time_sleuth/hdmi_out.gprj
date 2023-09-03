@@ -6,11 +6,14 @@
     <Device name="GW1NSR-4C" pn="GW1NSR-LV4CQN48PC6/I5">gw1nsr4c-000</Device>
     <FileList>
         <File path="src/fifo_hs/fifo_hs.v" type="file.verilog" enable="1"/>
+        <File path="src/gowin_clkdiv/gowin_clkdiv.v" type="file.verilog" enable="0"/>
         <File path="src/gowin_dcs/gowin_dcs.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pllvr_pll1/pll1.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pllvr_pll2/pll2.v" type="file.verilog" enable="1"/>
         <File path="src/hdmi_device.v" type="file.verilog" enable="1"/>
         <File path="src/testpattern.v" type="file.verilog" enable="1"/>
+        <File path="src/time_sleuth/cec/cec_message.sv" type="file.verilog" enable="1"/>
+        <File path="src/time_sleuth/cec/cec_transmitter.sv" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/char_rom/char_rom.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/char_rom/lagdisplay.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/char_rom/resolution.v" type="file.verilog" enable="1"/>
@@ -22,19 +25,27 @@
         <File path="src/time_sleuth/misc/Flag_CrossDomain.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/misc/bcdcounter.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/misc/data_cross.v" type="file.verilog" enable="1"/>
+        <File path="src/time_sleuth/misc/debouncer.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/misc/edge_detect.v" type="file.verilog" enable="1"/>
+        <File path="src/time_sleuth/misc/sync_data_cross.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/sensor.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/typedef.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/video.v" type="file.verilog" enable="1"/>
+        <File path="src/time_sleuth/video/avi_info_frame.sv" type="file.verilog" enable="1"/>
+        <File path="src/time_sleuth/video/datagen.v" type="file.verilog" enable="1"/>
+        <File path="src/time_sleuth/video/packet_assembler.sv" type="file.verilog" enable="1"/>
+        <File path="src/time_sleuth/video/spd_info_frame.sv" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/video/textgen.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/video/timingsgen.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/video/video_config.v" type="file.verilog" enable="1"/>
         <File path="src/time_sleuth/video/videogen.v" type="file.verilog" enable="1"/>
+        <File path="src/tmds_channel.sv" type="file.verilog" enable="1"/>
         <File path="src/tmds_encoder.v" type="file.verilog" enable="1"/>
         <File path="src/video_clock.v" type="file.verilog" enable="1"/>
         <File path="src/video_timing.vh" type="file.verilog" enable="1"/>
         <File path="src/video_top.v" type="file.verilog" enable="0"/>
         <File path="src/dk_video.cst" type="file.cst" enable="1"/>
+        <File path="src/dk_video_fp.cst" type="file.cst" enable="0"/>
         <File path="src/dk_video.sdc" type="file.sdc" enable="1"/>
         <File path="src/time_sleuth/char_rom/font/8x16-font-digits.v" type="file.other" enable="1"/>
         <File path="src/time_sleuth/defines.v" type="file.other" enable="1"/>
